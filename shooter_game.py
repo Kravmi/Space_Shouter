@@ -27,7 +27,8 @@ class Player(GameSprite):
             self.rect.x += self.speed
 
     def fire(self):
-        pass
+        bullet = Bullet('bullet.png', 15, 20, self.rect.x + 33, self.rect.y, 5)
+        bullets.add(bullet)
 
 class Enemy(GameSprite):
     def update(self):
@@ -38,6 +39,13 @@ class Enemy(GameSprite):
             enemy_finish += 1
             self.rect.y = 0
             self.rect.x = random.randint(30, cnst.HEIGHT_WINDOW - 30)
+
+class Bullet(GameSprite):
+    def update(self):
+        if self.rect.y > 0:
+            self.rect.y -= self.speed
+        else:
+            self.kill()
 
 def start_game():
     global main_menu
@@ -58,8 +66,10 @@ pg.mixer.init()
 pg.mixer.music.load('space.ogg')
 pg.mixer.music.set_volume(0.1)
 pg.mixer.music.play()
+fire_sound = pg.mixer.Sound('fire.ogg')
 player = Player('rocket.png', 80, 100, 5, 400, 10)
 monsters = pg.sprite.Group()
+bullets = pg.sprite.Group()
 main_menu = menu.Menu('Space Game', cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW)
 main_menu.add.button('PLAY', start_game)
 main_menu.add.button('EXIT', menu.events.EXIT)
@@ -73,6 +83,10 @@ while game:
     for i in pg.event.get():
         if i.type == pg.QUIT:
             game = False
+        elif i.type == pg.MOUSEBUTTONDOWN and i.button == 1:
+            fire_sound.play()
+            player.fire()
+             
     if main_menu.is_enabled():
         main_menu.mainloop(window)
     if not finish:
@@ -80,7 +94,9 @@ while game:
         player.reset()
         player.update()
         monsters.update()
+        bullets.update()
         monsters.draw(window)
+        bullets.draw(window)
         count = font.render('Счет:', 1, (255, 255, 255))
         window.blit(count, (10, 20))
         lose = font.render(f'Пропущено: {enemy_finish}', 1, (255, 255, 255))
