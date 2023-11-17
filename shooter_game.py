@@ -30,15 +30,17 @@ class Player(GameSprite):
         bullet = Bullet('bullet.png', 15, 20, self.rect.x + 33, self.rect.y, 5)
         bullets.add(bullet)
 
+
 class Enemy(GameSprite):
     def update(self):
         if self.rect.y < cnst.WIDTH_WINDOW:
             self.rect.y += self.speed
-        else: 
-            global enemy_finish 
+        else:
+            global enemy_finish
             enemy_finish += 1
             self.rect.y = 0
             self.rect.x = random.randint(30, cnst.HEIGHT_WINDOW - 30)
+
 
 class Bullet(GameSprite):
     def update(self):
@@ -46,6 +48,7 @@ class Bullet(GameSprite):
             self.rect.y -= self.speed
         else:
             self.kill()
+
 
 def start_game():
     global main_menu
@@ -74,11 +77,18 @@ main_menu = menu.Menu('Space Game', cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW)
 main_menu.add.button('PLAY', start_game)
 main_menu.add.button('EXIT', menu.events.EXIT)
 pg.font.init()
+lose_enemy = 0
 font = pg.font.Font(None, 36)
+pg.font.init()
+font_finish = pg.font.Font(None, 70)
+win = font_finish.render('YOU WIN!!!', True, cnst.GREEN)
+lose_finish = font_finish.render('YOU LOSE!!!', True, cnst.RED)
 for i in range(5):
-    monster = Enemy('ufo.png', 80, 50, random.randint(30, cnst.HEIGHT_WINDOW - 30), random.randint(20, 30), random.randint(1, 3))
+    monster = Enemy('ufo.png', 80, 50,
+    random.randint(30, cnst.HEIGHT_WINDOW - 30),
+    random.randint(20, 30), random.randint(1, 3))
     monsters.add(monster)
-    
+
 while game:
     for i in pg.event.get():
         if i.type == pg.QUIT:
@@ -86,7 +96,7 @@ while game:
         elif i.type == pg.MOUSEBUTTONDOWN and i.button == 1:
             fire_sound.play()
             player.fire()
-             
+ 
     if main_menu.is_enabled():
         main_menu.mainloop(window)
     if not finish:
@@ -97,12 +107,24 @@ while game:
         bullets.update()
         monsters.draw(window)
         bullets.draw(window)
-        count = font.render('Счет:', 1, (255, 255, 255))
+        count = font.render(f'Счет: {lose_enemy}', 1, (255, 255, 255))
         window.blit(count, (10, 20))
         lose = font.render(f'Пропущено: {enemy_finish}', 1, (255, 255, 255))
         window.blit(lose, (10, 50))
-        if enemy_finish >= 3:
+        if enemy_finish >= 3 or pg.sprite.spritecollide(player, monsters, False):
             finish = True
-            main_menu.enable()
+            window.blit(lose_finish, (200, 200))
+            # main_menu.enable()
+        sprite_list = pg.sprite.groupcollide(monsters, bullets, True, True)
+        for sprite in sprite_list:
+            lose_enemy += 1
+            new_enemy = Enemy('ufo.png', 80, 50, 
+            random.randint(30, cnst.HEIGHT_WINDOW - 30), random.randint(20, 30), 
+            random.randint(1, 3))
+            monsters.add(new_enemy)
+        if lose_enemy >= 10:
+            finish = True
+            window.blit(win, (200, 200))
+            # main_menu.enable()
     pg.display.update()
     clock.tick(cnst.FPS)
