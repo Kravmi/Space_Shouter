@@ -3,6 +3,7 @@ import pygame as pg
 import constants as cnst
 import random
 import pygame_menu as menu
+from time import time as timer
 
 
 class GameSprite(pg.sprite.Sprite):
@@ -50,6 +51,15 @@ class Bullet(GameSprite):
             self.kill()
 
 
+class Asteroid(GameSprite):
+    def update(self):
+        if self.rect.y < cnst.WIDTH_WINDOW:
+            self.rect.y += self.speed
+        else:
+            self.rect.y = 0
+            self.rect.x = random.randint(30, cnst.HEIGHT_WINDOW - 30)
+
+
 def start_game():
     global main_menu
     main_menu.disable()
@@ -62,6 +72,8 @@ pg.display.set_caption("Space game")
 game = True
 finish = False
 enemy_finish = 0
+reload_time = False
+num_fire = 0
 clock = pg.time.Clock()
 background = pg.transform.scale(pg.image.load('galaxy.jpg'), \
     (cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW))
@@ -73,9 +85,25 @@ fire_sound = pg.mixer.Sound('fire.ogg')
 player = Player('rocket.png', 80, 100, 5, 400, 10)
 monsters = pg.sprite.Group()
 bullets = pg.sprite.Group()
+asteroids = pg.sprite.Group()
+background_image = pg.image.load('fon112233.jpg')
+
+
+def main_background() -> None:
+    """
+    Background color of the main menu, on this function user can plot
+    images, play sounds, etc.
+    """
+    window.blit(background_image, (0, 0))
+    print(1)
+
+
 main_menu = menu.Menu('Space Game', cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW)
 main_menu.add.button('PLAY', start_game)
 main_menu.add.button('EXIT', menu.events.EXIT)
+image_path = menu.baseimage.IMAGE_EXAMPLE_PYGAME_MENU
+main_menu.add.image(image_path, angle=10, scale=(0.15, 0.15))
+main_menu.add.image(image_path, angle=-10, scale=(0.15, 0.15))
 pg.font.init()
 lose_enemy = 0
 font = pg.font.Font(None, 36)
@@ -86,32 +114,43 @@ lose_finish = font_finish.render('YOU LOSE!!!', True, cnst.RED)
 for i in range(5):
     monster = Enemy('ufo.png', 80, 50,
     random.randint(30, cnst.HEIGHT_WINDOW - 30),
-    random.randint(20, 30), random.randint(1, 3))
+    random.randint(20, 30), random.uniform(1.0, 2.2))
     monsters.add(monster)
+
+for i in range(3):
+    asteroid = Asteroid('asteroid.png', 80, 50,
+    random.randint(30, cnst.HEIGHT_WINDOW - 30),
+    random.randint(20, 30), 2)
+    asteroids.add(asteroid)
 
 while game:
     for i in pg.event.get():
         if i.type == pg.QUIT:
             game = False
         elif i.type == pg.MOUSEBUTTONDOWN and i.button == 1:
-            fire_sound.play()
-            player.fire()
- 
+            if num_fire < 10 and not reload_time:
+                fire_sound.play()
+                player.fire()
+                num_fire += 1
+            elif num_fire >= 10 and not reload_time:
+                last_time = timer()
+                reload_time = True
+
     if main_menu.is_enabled():
-        main_menu.mainloop(window)
+        main_menu.mainloop(window, main_background)
     if not finish:
         window.blit(background, (0, 0))
         player.reset()
         player.update()
         monsters.update()
         bullets.update()
+        asteroids.update()
+        asteroids.draw(window)
         monsters.draw(window)
         bullets.draw(window)
-        count = font.render(f'Счет: {lose_enemy}', 1, (255, 255, 255))
-        window.blit(count, (10, 20))
-        lose = font.render(f'Пропущено: {enemy_finish}', 1, (255, 255, 255))
-        window.blit(lose, (10, 50))
-        if enemy_finish >= 3 or pg.sprite.spritecollide(player, monsters, False):
+        if (enemy_finish >= 3 
+            or pg.sprite.spritecollide(player, asteroids, False) 
+            or pg.sprite.spritecollide(player, monsters, False)):
             finish = True
             window.blit(lose_finish, (200, 200))
             # main_menu.enable()
@@ -125,6 +164,17 @@ while game:
         if lose_enemy >= 10:
             finish = True
             window.blit(win, (200, 200))
-            # main_menu.enable()
+        if reload_time:
+            new_last_time = timer()
+            if new_last_time - last_time < 3:
+                reload_font = font.render('Reload...', 1, cnst.RED)
+                window.blit(reload_font, (250, 460))
+            else:
+                num_fire = 0
+                reload_time = False
+        count = font.render(f'Счет: {lose_enemy}', 1, (255, 255, 255))
+        lose = font.render(f'Пропущено: {enemy_finish}', 1, (255, 255, 255))
+        window.blit(lose, (10, 50))
+        window.blit(count, (10, 20))
     pg.display.update()
     clock.tick(cnst.FPS)
