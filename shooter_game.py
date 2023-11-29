@@ -1,4 +1,3 @@
-# Создай собственный Шутер!
 import pygame as pg
 import constants as cnst
 import random
@@ -66,7 +65,15 @@ def start_game():
     main_menu.full_reset()
 
 
+def main_background() -> None:
+    window.blit(background_image, (0, 0))
+
+
 pg.init()
+pg.font.init()
+pg.mixer.init()
+clock = pg.time.Clock()
+
 window = pg.display.set_mode((cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW))
 pg.display.set_caption("Space game")
 game = True
@@ -74,43 +81,31 @@ finish = False
 enemy_finish = 0
 reload_time = False
 num_fire = 0
-clock = pg.time.Clock()
-background = pg.transform.scale(pg.image.load('galaxy.jpg'), \
-    (cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW))
-pg.mixer.init()
+lose_enemy = 0
+
+font = pg.font.SysFont('Arial', 36)
+font_finish = pg.font.SysFont('Arial', 70)
+win = font_finish.render('YOU WIN!!!', True, cnst.GREEN)
+lose_finish = font_finish.render('YOU LOSE!!!', True, cnst.RED)
+
 pg.mixer.music.load('space.ogg')
 pg.mixer.music.set_volume(0.1)
 pg.mixer.music.play()
 fire_sound = pg.mixer.Sound('fire.ogg')
-player = Player('rocket.png', 80, 100, 5, 400, 10)
-monsters = pg.sprite.Group()
-bullets = pg.sprite.Group()
-asteroids = pg.sprite.Group()
-background_image = pg.image.load('fon112233.jpg')
 
-
-def main_background() -> None:
-    """
-    Background color of the main menu, on this function user can plot
-    images, play sounds, etc.
-    """
-    window.blit(background_image, (0, 0))
-    print(1)
-
+background = pg.transform.scale(pg.image.load('galaxy.jpg'), \
+    (cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW))
+background_image = pg.image.load('menu_background.jpg')
 
 main_menu = menu.Menu('Space Game', cnst.WIDTH_WINDOW, cnst.HEIGHT_WINDOW)
 main_menu.add.button('PLAY', start_game)
 main_menu.add.button('EXIT', menu.events.EXIT)
-image_path = menu.baseimage.IMAGE_EXAMPLE_PYGAME_MENU
-main_menu.add.image(image_path, angle=10, scale=(0.15, 0.15))
-main_menu.add.image(image_path, angle=-10, scale=(0.15, 0.15))
-pg.font.init()
-lose_enemy = 0
-font = pg.font.Font(None, 36)
-pg.font.init()
-font_finish = pg.font.Font(None, 70)
-win = font_finish.render('YOU WIN!!!', True, cnst.GREEN)
-lose_finish = font_finish.render('YOU LOSE!!!', True, cnst.RED)
+
+player = Player('rocket.png', 80, 100, 5, 400, 10)
+monsters = pg.sprite.Group()
+bullets = pg.sprite.Group()
+asteroids = pg.sprite.Group()
+
 for i in range(5):
     monster = Enemy('ufo.png', 80, 50,
     random.randint(30, cnst.HEIGHT_WINDOW - 30),
@@ -148,8 +143,8 @@ while game:
         asteroids.draw(window)
         monsters.draw(window)
         bullets.draw(window)
-        if (enemy_finish >= 3 
-            or pg.sprite.spritecollide(player, asteroids, False) 
+        if (enemy_finish >= 3
+            or pg.sprite.spritecollide(player, asteroids, False)
             or pg.sprite.spritecollide(player, monsters, False)):
             finish = True
             window.blit(lose_finish, (200, 200))
@@ -157,8 +152,8 @@ while game:
         sprite_list = pg.sprite.groupcollide(monsters, bullets, True, True)
         for sprite in sprite_list:
             lose_enemy += 1
-            new_enemy = Enemy('ufo.png', 80, 50, 
-            random.randint(30, cnst.HEIGHT_WINDOW - 30), random.randint(20, 30), 
+            new_enemy = Enemy('ufo.png', 80, 50,
+            random.randint(30, cnst.HEIGHT_WINDOW - 30), random.randint(20, 30),
             random.randint(1, 3))
             monsters.add(new_enemy)
         if lose_enemy >= 10:
